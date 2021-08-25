@@ -1,0 +1,12 @@
+{
+    "input": {
+        "text": "これは、Google Text-To-Speech APIのテストサンプルです。"
+    },
+    "voice": {
+        "languageCode": "ja-JP",
+        "name": "ja-JP-Wavenet-B"
+    },
+    "audioConfig": {
+        "audioEncoding":"MP3"
+    }
+}
