@@ -1,3 +1,4 @@
+mod i18n;
 
 use std::env;
 
@@ -15,6 +16,9 @@ extern crate base64;
 use base64::decode;
 use std::fs::OpenOptions;
 use std::io::Write;
+use gettextrs::gettext;
+use crate::i18n::i18n_init;
+use std::process::exit;
 
 struct Handler;
 
@@ -145,7 +149,8 @@ async fn generate_voice_file(audio_bytes: String) {
         .open(filename);
     match file {
         Ok(mut f) => {
-            println!("ファイルに音声を書き込み中...");
+            // ファイルに音声を書き込み中...
+            println!("{}", gettext("Writing audio to file..."));
             let bytes = decode(audio_bytes).unwrap();
             f.write_all(&bytes).unwrap();
             f.flush().unwrap();
@@ -164,9 +169,24 @@ struct General;
 
 #[tokio::main]
 async fn main() {
+    i18n_init();
+
     // Configure the client with your Discord bot token in the environment.
-    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
-    let _credential = env::var("GOOGLE_APPLICATION_CREDENTIALS").expect("Expected a secret credential including Google TTS");
+    let token = match env::var("DISCORD_TOKEN") {
+        Ok(t) => t,
+        Err(_) => {
+            println!("{}", gettext("DISCORD_TOKEN environment variable is not set"));
+            exit(1);
+        }
+    };
+
+    let _credential = match env::var("GOOGLE_APPLICATION_CREDENTIALS") {
+        Ok(t) => t,
+        Err(_) => {
+            println!("{}", gettext("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set"));
+            exit(1);
+        }
+    };
 
     let framework = StandardFramework::new()
         .configure(|c| c.prefix(COMMAND_PREFIX))
@@ -180,7 +200,9 @@ async fn main() {
             .await.expect("Err creating client");
 
     if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
+        println!("{}", gettext("Client error:"));
+        println!("{:?}", why);
+        exit(1);
     }
 
     tokio::spawn(async move {
@@ -188,7 +210,7 @@ async fn main() {
     });
 
     tokio::signal::ctrl_c().await.unwrap();
-    println!("Received Ctrl-C, shutting down.");
+    println!("{}", gettext("Received Ctrl-C, shutting down."));
 }
 
 #[command]
