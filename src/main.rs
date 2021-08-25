@@ -28,14 +28,14 @@ impl EventHandler for Handler {
                 && !message.content.starts_with(COMMAND_PREFIX)
                 && !message.author.bot
             {
-                let filename = "audio.mp3";
+                let filename = "/tmp/audio.mp3";
 
                 // If request voice text is exists, we don't have to request it to the API, should use cached voice instead
                 generate_voice(&message.content).await;
 
                 let source = ffmpeg(filename)
                     .await
-                    .expect("This might fail: handle this error!");
+                    .expect("再生するための音声ファイルが見つかりませんでした");
 
                 let manager = songbird::get(&ctx).await
                     .expect("Songbird Voice client placed in at initialisation.").clone();
@@ -137,7 +137,7 @@ async fn generate_voice(text: &str) {
 }
 
 async fn generate_voice_file(audio_bytes: String) {
-    let filename = "audio.mp3"; // This needs to be dynamic named using sha1 to generate every voice for caching
+    let filename = "/tmp/audio.mp3"; // This needs to be dynamic named using sha1 to generate every voice for caching
     let file = OpenOptions::new()
         .write(true)
         .truncate(true)
@@ -145,11 +145,16 @@ async fn generate_voice_file(audio_bytes: String) {
         .open(filename);
     match file {
         Ok(mut f) => {
+            println!("ファイルに音声を書き込み中...");
             let bytes = decode(audio_bytes).unwrap();
             f.write_all(&bytes).unwrap();
             f.flush().unwrap();
+            println!("ファイルに音声を書き込みました");
         },
-        Err(why) => println!("{}", why)
+        Err(why) => {
+            println!("ファイルを作成できませんでした");
+            println!("{}", why)
+        }
     }
 }
 
